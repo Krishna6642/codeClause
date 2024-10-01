@@ -1,0 +1,135 @@
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
+
+public class AESUtil {
+    // Method to generate AES Secret Key
+    public static SecretKey generateAESKey() throws Exception {
+        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        keyGenerator.init(128); // AES key size
+        return keyGenerator.generateKey();
+    }
+
+    // Method to encrypt the message using AES
+    public static String encrypt(String data, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] encryptedBytes = cipher.doFinal(data.getBytes());
+        return Base64.getEncoder().encodeToString(encryptedBytes);
+    }
+
+    // Method to decrypt the message using AES
+    public static String decrypt(String encryptedData, SecretKey key) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        byte[] decodedBytes = Base64.getDecoder().decode(encryptedData);
+        byte[] decryptedBytes = cipher.doFinal(decodedBytes);
+        return new String(decryptedBytes);
+    }
+}
+public class RSAUtil {
+    // Method to generate RSA Key Pair
+    public static KeyPair generateRSAKeyPair() throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+        return keyPairGenerator.generateKeyPair();
+    }
+
+    // Encrypt AES Key using RSA public key
+    public static String encryptAESKey(SecretKey aesKey, PublicKey publicKey) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+        byte[] encryptedBytes = cipher.doFinal(aesKey.getEncoded());
+        return Base64.getEncoder().encodeToString(encryptedBytes);
+    }
+
+    // Decrypt AES Key using RSA private key
+    public static SecretKey decryptAESKey(String encryptedKey, PrivateKey privateKey) throws Exception {
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        byte[] decodedKey = Base64.getDecoder().decode(encryptedKey);
+        byte[] decryptedKey = cipher.doFinal(decodedKey);
+        return new SecretKeySpec(decryptedKey, 0, decryptedKey.length, "AES");
+    }
+}
+import java.io.*;
+import java.net.*;
+import java.security.KeyPair;
+
+public class VPNServer {
+    public static void main(String[] args) throws Exception {
+        ServerSocket serverSocket = new ServerSocket(5000);
+        System.out.println("VPN Server started, waiting for connection...");
+
+        // Accept client connection
+        Socket clientSocket = serverSocket.accept();
+        System.out.println("Client connected");
+
+        // Generate RSA Key Pair for secure key exchange
+        KeyPair rsaKeyPair = RSAUtil.generateRSAKeyPair();
+
+        // Send RSA Public Key to Client
+        ObjectOutputStream out = new ObjectOutputStream(clientSocket.getOutputStream());
+        out.writeObject(rsaKeyPair.getPublic());
+        out.flush();
+
+        // Receive encrypted AES key from the client
+        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        String encryptedAESKey = in.readLine();
+        System.out.println("Encrypted AES key received from client");
+
+        // Decrypt AES key using RSA Private Key
+        SecretKey aesKey = RSAUtil.decryptAESKey(encryptedAESKey, rsaKeyPair.getPrivate());
+        System.out.println("AES key decrypted");
+
+        // Receive encrypted message from the client
+        String encryptedMessage = in.readLine();
+        System.out.println("Encrypted message received from client");
+
+        // Decrypt the message using AES key
+        String decryptedMessage = AESUtil.decrypt(encryptedMessage, aesKey);
+        System.out.println("Decrypted message: " + decryptedMessage);
+
+        clientSocket.close();
+        serverSocket.close();
+    }
+}
+import java.io.*;
+import java.net.*;
+import java.security.PublicKey;
+
+public class VPNClient {
+    public static void main(String[] args) throws Exception {
+        // Connect to the server
+        Socket socket = new Socket("localhost", 5000);
+        System.out.println("Connected to VPN Server");
+
+        // Receive RSA Public Key from the server
+        ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+        PublicKey serverPublicKey = (PublicKey) in.readObject();
+        System.out.println("Received RSA Public Key from server");
+
+        // Generate AES key
+        SecretKey aesKey = AESUtil.generateAESKey();
+
+        // Encrypt AES key using server's RSA Public Key
+        String encryptedAESKey = RSAUtil.encryptAESKey(aesKey, serverPublicKey);
+
+        // Send encrypted AES key to the server
+        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+        out.println(encryptedAESKey);
+        System.out.println("Sent encrypted AES key to server");
+
+        // Encrypt a message using AES
+        String message = "This is a secure message from the client";
+        String encryptedMessage = AESUtil.encrypt(message, aesKey);
+
+        // Send encrypted message to the server
+        out.println(encryptedMessage);
+        System.out.println("Sent encrypted message to server");
+
+        socket.close();
+    }
+}
