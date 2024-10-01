@@ -1,0 +1,138 @@
+import java.util.ArrayList;
+
+class Patient {
+    String name;
+    int age;
+    String patientId;
+    ArrayList<String> medicalHistory;
+
+    public Patient(String name, int age, String patientId) {
+        this.name = name;
+        this.age = age;
+        this.patientId = patientId;
+        this.medicalHistory = new ArrayList<>();
+    }
+
+    public void addMedicalHistory(String record) {
+        medicalHistory.add(record);
+    }
+
+    public void displayMedicalHistory() {
+        System.out.println("Medical History for " + name + ":");
+        for (String record : medicalHistory) {
+            System.out.println(record);
+        }
+    }
+}
+import java.util.Date;
+
+class Appointment {
+    Patient patient;
+    String doctorName;
+    Date appointmentDate;
+
+    public Appointment(Patient patient, String doctorName, Date appointmentDate) {
+        this.patient = patient;
+        this.doctorName = doctorName;
+        this.appointmentDate = appointmentDate;
+    }
+
+    public void displayAppointmentDetails() {
+        System.out.println("Appointment Details:");
+        System.out.println("Patient: " + patient.name);
+        System.out.println("Doctor: " + doctorName);
+        System.out.println("Date: " + appointmentDate);
+    }
+}
+import java.util.ArrayList;
+import java.util.Date;
+
+class Hospital {
+    ArrayList<Patient> patients;
+    ArrayList<Appointment> appointments;
+
+    public Hospital() {
+        patients = new ArrayList<>();
+        appointments = new ArrayList<>();
+    }
+
+    // Add a new patient to the system
+    public void addPatient(String name, int age, String patientId) {
+        Patient patient = new Patient(name, age, patientId);
+        patients.add(patient);
+        System.out.println("Patient added: " + name);
+    }
+
+    // Schedule an appointment
+    public void scheduleAppointment(String patientId, String doctorName, Date date) {
+        Patient patient = findPatientById(patientId);
+        if (patient != null) {
+            Appointment appointment = new Appointment(patient, doctorName, date);
+            appointments.add(appointment);
+            System.out.println("Appointment scheduled for " + patient.name + " with Dr. " + doctorName);
+        } else {
+            System.out.println("Patient not found!");
+        }
+    }
+
+    // Find a patient by ID
+    private Patient findPatientById(String patientId) {
+        for (Patient patient : patients) {
+            if (patient.patientId.equals(patientId)) {
+                return patient;
+            }
+        }
+        return null;
+    }
+
+    // Display patient medical history
+    public void showMedicalHistory(String patientId) {
+        Patient patient = findPatientById(patientId);
+        if (patient != null) {
+            patient.displayMedicalHistory();
+        } else {
+            System.out.println("Patient not found!");
+        }
+    }
+
+    // Display all appointments
+    public void showAppointments() {
+        System.out.println("All Appointments:");
+        for (Appointment appointment : appointments) {
+            appointment.displayAppointmentDetails();
+            System.out.println("------");
+        }
+    }
+}
+import java.util.Scanner;
+import java.util.Date;
+
+public class HospitalInformationSystem {
+    public static void main(String[] args) {
+        Hospital hospital = new Hospital();
+        Scanner scanner = new Scanner(System.in);
+
+        // Adding a few patients
+        hospital.addPatient("John Doe", 30, "P001");
+        hospital.addPatient("Jane Smith", 25, "P002");
+
+        // Adding medical history
+        Patient john = hospital.findPatientById("P001");
+        if (john != null) {
+            john.addMedicalHistory("Blood Pressure - Normal");
+            john.addMedicalHistory("Allergy - Penicillin");
+        }
+
+        // Scheduling appointments
+        hospital.scheduleAppointment("P001", "Dr. Adams", new Date());
+        hospital.scheduleAppointment("P002", "Dr. Wilson", new Date());
+
+        // Display appointments
+        hospital.showAppointments();
+
+        // Display medical history
+        hospital.showMedicalHistory("P001");
+
+        scanner.close();
+    }
+}
