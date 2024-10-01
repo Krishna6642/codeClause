@@ -1,0 +1,95 @@
+class Movie {
+    String title;
+    int duration; // Duration in minutes
+    boolean[][] seats; // Rows and columns representing seats
+
+    public Movie(String title, int duration, int rows, int cols) {
+        this.title = title;
+        this.duration = duration;
+        this.seats = new boolean[rows][cols]; // All seats initially available (false means available)
+    }
+
+    // Display available seats
+    public void displaySeats() {
+        System.out.println("Available Seats for " + title + ":");
+        for (int i = 0; i < seats.length; i++) {
+            for (int j = 0; j < seats[i].length; j++) {
+                if (seats[i][j]) {
+                    System.out.print("[X] "); // X indicates booked
+                } else {
+                    System.out.print("[ ] "); // Empty space indicates available
+                }
+            }
+            System.out.println();
+        }
+    }
+
+    // Book a seat
+    public boolean bookSeat(int row, int col) {
+        if (row >= 0 && row < seats.length && col >= 0 && col < seats[0].length && !seats[row][col]) {
+            seats[row][col] = true;
+            return true;
+        }
+        return false;
+    }
+}
+class Booking {
+    Movie[] movies;
+
+    public Booking(Movie[] movies) {
+        this.movies = movies;
+    }
+
+    public void displayMovies() {
+        System.out.println("Available Movies:");
+        for (int i = 0; i < movies.length; i++) {
+            System.out.println((i + 1) + ". " + movies[i].title + " (" + movies[i].duration + " mins)");
+        }
+    }
+
+    public void makeReservation(int movieIndex, int row, int col) {
+        if (movieIndex >= 0 && movieIndex < movies.length) {
+            boolean success = movies[movieIndex].bookSeat(row, col);
+            if (success) {
+                System.out.println("Seat booked successfully for " + movies[movieIndex].title);
+            } else {
+                System.out.println("Seat is already booked or invalid seat selected.");
+            }
+        } else {
+            System.out.println("Invalid movie selection.");
+        }
+    }
+}
+import java.util.Scanner;
+
+public class MovieTicketBookingSystem {
+    public static void main(String[] args) {
+        // Create some sample movies
+        Movie movie1 = new Movie("Avengers", 120, 5, 5);
+        Movie movie2 = new Movie("Inception", 150, 5, 5);
+        Movie[] movies = { movie1, movie2 };
+
+        Booking bookingSystem = new Booking(movies);
+        Scanner scanner = new Scanner(System.in);
+
+        // Display available movies
+        bookingSystem.displayMovies();
+
+        System.out.println("Select a movie (1 or 2): ");
+        int movieIndex = scanner.nextInt() - 1;
+
+        // Display available seats for the selected movie
+        movies[movieIndex].displaySeats();
+
+        // Make a reservation
+        System.out.println("Enter row and column to book seat (e.g., 1 2): ");
+        int row = scanner.nextInt() - 1;
+        int col = scanner.nextInt() - 1;
+        bookingSystem.makeReservation(movieIndex, row, col);
+
+        // Show updated seats
+        movies[movieIndex].displaySeats();
+
+        scanner.close();
+    }
+}
